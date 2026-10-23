@@ -1,0 +1,175 @@
+<!DOCTYPE html>
+<html lang="uz">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>O'z ustimda ishlash kalendari</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:wght@400;600;800&display=swap" rel="stylesheet">
+<style>
+:root{
+  --bg:#eef1f4; --card:#ffffff; --ink:#14213d; --muted:#6b7689; --line:#dde2ea;
+  --work:#2f5bea; --work-ink:#ffffff; --night:#f2a900; --night-ink:#3a2a00;
+  --today:#14213d;
+  color-scheme: light;
+}
+@media (prefers-color-scheme: dark){
+  :root:not([data-theme="light"]){
+    --bg:#0e1420; --card:#161e2e; --ink:#e8ecf4; --muted:#8c97ab; --line:#26314a;
+    --work:#5b82ff; --work-ink:#0b1020; --night:#ffc233; --night-ink:#2b1f00; --today:#e8ecf4;
+    color-scheme: dark;
+  }
+}
+*{box-sizing:border-box}
+html{height:100%}
+body{margin:0;min-height:100%;background:var(--bg);color:var(--ink);
+  font-family:"Bricolage Grotesque",system-ui,-apple-system,"Segoe UI",sans-serif;
+  padding:max(20px,env(safe-area-inset-top,0px)) 16px max(24px,env(safe-area-inset-bottom,0px));
+  display:flex;justify-content:center}
+main{width:100%;max-width:460px}
+h1{font-size:1.5rem;font-weight:800;margin:0 0 4px;letter-spacing:-.01em}
+.sub{color:var(--muted);margin:0 0 18px;font-size:.95rem}
+
+.totals{background:var(--ink);color:var(--bg);border-radius:18px;padding:18px 20px;margin-bottom:14px;
+  display:flex;align-items:flex-end;justify-content:space-between;gap:12px}
+.totals .big{font-size:3.4rem;font-weight:800;line-height:1;letter-spacing:-.03em}
+.totals .lbl{font-size:.9rem;opacity:.75;margin-top:4px}
+.totals .side{text-align:right;font-size:.9rem;line-height:1.5}
+.totals .side b{font-weight:800;font-size:1.15rem}
+
+.cal{background:var(--card);border:1px solid var(--line);border-radius:18px;padding:14px}
+.nav{display:flex;align-items:center;justify-content:space-between;margin-bottom:10px}
+.nav h2{margin:0;font-size:1.15rem;font-weight:600}
+.nav button{width:40px;height:40px;border-radius:12px;border:1px solid var(--line);background:transparent;
+  color:var(--ink);font:inherit;font-size:1.2rem;cursor:pointer}
+.nav button:hover{background:var(--bg)}
+.grid{display:grid;grid-template-columns:repeat(7,1fr);gap:6px}
+.dow{text-align:center;color:var(--muted);font-size:.8rem;padding:4px 0}
+.day{position:relative;aspect-ratio:1;border-radius:12px;border:1px solid var(--line);background:transparent;
+  color:var(--ink);font:inherit;font-size:.95rem;cursor:pointer;display:flex;align-items:center;justify-content:center;
+  padding:0;transition:background .12s, transform .08s}
+.day:hover{background:var(--bg)}
+.day:active{transform:scale(.94)}
+.day:focus-visible,.nav button:focus-visible,.today-btn:focus-visible{outline:3px solid var(--work);outline-offset:2px}
+.day.blank{border:none;pointer-events:none}
+.day.today{border:2px solid var(--today);font-weight:800}
+.day.work{background:var(--work);border-color:var(--work);color:var(--work-ink);font-weight:600}
+.day.night{background:var(--work);border-color:var(--work);color:var(--work-ink);font-weight:600}
+.day .plus{position:absolute;right:-4px;top:-5px;width:20px;height:20px;border-radius:50%;
+  background:var(--night);color:var(--night-ink);font-weight:800;font-size:.9rem;line-height:20px;text-align:center;
+  border:2px solid var(--card)}
+
+.legend{display:flex;flex-wrap:wrap;gap:6px 16px;margin-top:14px;color:var(--muted);font-size:.85rem;align-items:center}
+.legend i{display:inline-block;width:14px;height:14px;border-radius:5px;vertical-align:-2px;margin-right:6px}
+.legend .l1{background:var(--work)}
+.legend .l2{background:var(--work);position:relative;box-shadow:5px -5px 0 -2px var(--night)}
+.month-stats{display:flex;gap:10px;margin-top:14px}
+.month-stats div{flex:1;border:1px solid var(--line);border-radius:14px;padding:10px 12px;background:var(--card)}
+.month-stats b{display:block;font-size:1.5rem;font-weight:800}
+.month-stats span{color:var(--muted);font-size:.85rem}
+.today-btn{margin-top:14px;width:100%;padding:12px;border-radius:12px;border:1px solid var(--line);
+  background:transparent;color:var(--ink);font:inherit;cursor:pointer}
+.today-btn:hover{background:var(--card)}
+.hint{color:var(--muted);font-size:.8rem;margin-top:10px;text-align:center}
+</style>
+</head>
+<body>
+<main>
+  <h1>O'z ustimda ishlash</h1>
+  <p class="sub">Kunni bosing: bir marta — ishladim, ikki marta — kechqurun ham (+), uch marta — o'chirish.</p>
+
+  <section class="totals" aria-live="polite">
+    <div>
+      <div class="big" id="totalDays">0</div>
+      <div class="lbl">jami ishlagan kun</div>
+    </div>
+    <div class="side">
+      <div><b id="totalPlus">0</b> kech/tun (+)</div>
+      <div><b id="totalAll">0</b> jami (kun + kech)</div>
+    </div>
+  </section>
+
+  <section class="cal">
+    <div class="nav">
+      <button id="prev" aria-label="Oldingi oy">‹</button>
+      <h2 id="title"></h2>
+      <button id="next" aria-label="Keyingi oy">›</button>
+    </div>
+    <div class="grid" id="dow"></div>
+    <div class="grid" id="grid" style="margin-top:6px"></div>
+
+    <div class="legend">
+      <span><i class="l1"></i>Ishladim</span>
+      <span><i class="l2"></i>Kechqurun ham (+)</span>
+    </div>
+  </section>
+
+  <div class="month-stats">
+    <div><b id="mDays">0</b><span>shu oyda kun</span></div>
+    <div><b id="mPlus">0</b><span>shu oyda kech (+)</span></div>
+  </div>
+
+  <button class="today-btn" id="todayBtn">Bugunga qaytish</button>
+  <p class="hint">Ma'lumot shu brauzerda saqlanadi.</p>
+</main>
+
+<script>
+(function(){
+  var MONTHS=["Yanvar","Fevral","Mart","Aprel","May","Iyun","Iyul","Avgust","Sentabr","Oktabr","Noyabr","Dekabr"];
+  var DOW=["Du","Se","Ch","Pa","Ju","Sh","Ya"];
+  var KEY="ozustimda-kalendar-v1";
+  var data={}; // "YYYY-MM-DD" -> 1 (kun) | 2 (kun + kech)
+
+  try{ var raw=localStorage.getItem(KEY); if(raw) data=JSON.parse(raw)||{}; }catch(e){ data={}; }
+  function save(){ try{ localStorage.setItem(KEY,JSON.stringify(data)); }catch(e){} }
+
+  var now=new Date(); var view=new Date(now.getFullYear(),now.getMonth(),1);
+  function pad(n){return n<10?"0"+n:""+n}
+  function keyOf(y,m,d){return y+"-"+pad(m+1)+"-"+pad(d)}
+
+  var dowEl=document.getElementById("dow");
+  DOW.forEach(function(d){var e=document.createElement("div");e.className="dow";e.textContent=d;dowEl.appendChild(e);});
+
+  function render(){
+    var y=view.getFullYear(), m=view.getMonth();
+    document.getElementById("title").textContent=MONTHS[m]+" "+y;
+    var grid=document.getElementById("grid"); grid.innerHTML="";
+    var first=new Date(y,m,1); var offset=(first.getDay()+6)%7;
+    var days=new Date(y,m+1,0).getDate();
+    for(var i=0;i<offset;i++){var b=document.createElement("div");b.className="day blank";grid.appendChild(b);}
+    var todayKey=keyOf(now.getFullYear(),now.getMonth(),now.getDate());
+    var mDays=0,mPlus=0;
+    for(var d=1; d<=days; d++){
+      var k=keyOf(y,m,d), v=data[k]||0;
+      var btn=document.createElement("button");
+      btn.type="button"; btn.className="day"+(k===todayKey?" today":"")+(v?" work":"");
+      btn.textContent=d;
+      btn.setAttribute("aria-label",d+" "+MONTHS[m]+": "+(v===2?"ishladim, kechqurun ham":v===1?"ishladim":"belgilanmagan"));
+      if(v===2){var p=document.createElement("span");p.className="plus";p.textContent="+";btn.appendChild(p);}
+      if(v){mDays++;} if(v===2){mPlus++;}
+      btn.addEventListener("click",(function(key){return function(){
+        var cur=data[key]||0, next=(cur+1)%3;
+        if(next===0) delete data[key]; else data[key]=next;
+        save(); render();
+      };})(k));
+      grid.appendChild(btn);
+    }
+    document.getElementById("mDays").textContent=mDays;
+    document.getElementById("mPlus").textContent=mPlus;
+
+    var td=0,tp=0;
+    Object.keys(data).forEach(function(k){ if(data[k]){td++;} if(data[k]===2){tp++;} });
+    document.getElementById("totalDays").textContent=td;
+    document.getElementById("totalPlus").textContent=tp;
+    document.getElementById("totalAll").textContent=td+tp;
+  }
+
+  document.getElementById("prev").addEventListener("click",function(){view=new Date(view.getFullYear(),view.getMonth()-1,1);render();});
+  document.getElementById("next").addEventListener("click",function(){view=new Date(view.getFullYear(),view.getMonth()+1,1);render();});
+  document.getElementById("todayBtn").addEventListener("click",function(){view=new Date(now.getFullYear(),now.getMonth(),1);render();});
+  render();
+})();
+</script>
+</body>
+</html>
